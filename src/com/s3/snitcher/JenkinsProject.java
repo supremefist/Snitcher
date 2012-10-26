@@ -2,7 +2,6 @@ package com.s3.snitcher;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.List;
 
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
@@ -12,7 +11,7 @@ import org.dom4j.io.SAXReader;
 public class JenkinsProject {
 	private String projectName = null;
 	private String jenkinsName = null;
-	private String host = "http://winhudson.stonethree.com:8080";
+	private String host = null;
 	
 	private boolean building = false;
 	private int buildNumber = -1;
@@ -21,9 +20,10 @@ public class JenkinsProject {
 	private boolean notified = true; 
 	private int currentBuildNumber = -1;
 
-	public JenkinsProject(String newProjectName, String newJenkinsName) {
+	public JenkinsProject(String newHost, String newProjectName, String newJenkinsName) {
 		projectName = newProjectName;
 		jenkinsName = newJenkinsName;
+		host = newHost;
 	}
 
 	public String getName() {
@@ -115,5 +115,9 @@ public class JenkinsProject {
 
 	public String getNotifyString() {
 		return projectName + " build " + buildNumber + " " + buildResult + " thanks to " + lastUser + "!"; 
+	}
+
+	public boolean isBuilding() {
+		return building;
 	}
 }

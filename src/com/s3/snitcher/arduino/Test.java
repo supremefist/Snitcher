@@ -25,7 +25,8 @@ public class Test {
 			Thread.sleep(500);
 			main.setChannelToState(3, ProjectState.BUILD_FAILED);
 			Thread.sleep(500);
-			
+			main.setChannelToState(3, ProjectState.BUILDING);
+			Thread.sleep(500);
 		}
 		
 	}

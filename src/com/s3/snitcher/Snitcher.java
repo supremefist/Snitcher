@@ -2,9 +2,19 @@ package com.s3.snitcher;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.util.List;
 import java.util.Random;
 
 import javax.swing.Timer;
+
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.Element;
+import org.dom4j.io.SAXReader;
 
 import com.s3.snitcher.arduino.ArduinoSnitcher;
 import com.s3.snitcher.arduino.ProjectState;
@@ -20,28 +30,98 @@ public class Snitcher implements ActionListener {
 	SnitcherView view = null;
 	private boolean running = true;
 	private JenkinsMonitor monitor = new JenkinsMonitor();
-	private Timer timer = null;
+	private Timer timer = new Timer(2000, this);
 	private ArduinoSnitcher arduino = new ArduinoSnitcher();
+	private String host = null;
+	private String comPort = null;
 
 	/**
 	 * @param args
 	 */
 
+	@SuppressWarnings("unchecked")
+	public void readSettingsFromXML() {
+
+		String settingsFilename = "snitcher.xml";
+
+		File xml = new File(settingsFilename);
+		if (!xml.exists()) {
+			createDefaultXMLFile(settingsFilename);
+		}
+		
+		try {
+			SAXReader reader = new SAXReader();
+			Document doc;
+			doc = reader.read(xml);
+			Element root = doc.getRootElement();
+
+			comPort = root.elementText("com");
+			host = root.elementText("host");
+
+			System.out.println("Monitoring: " + host);
+			System.out.println("Arduino on: " + comPort);
+
+			Element projectsElement = root.element("projects");
+
+			List<Element> projects = (List<Element>) projectsElement
+					.elements("project");
+
+			for (Element project : projects) {
+				System.out.println("Project: "
+						+ project.elementText("display"));
+				monitor.addProject(new JenkinsProject(host, project
+						.elementText("display"), project
+						.elementText("jenkins")));
+			}
+
+		} catch (DocumentException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		arduino.initialize(comPort);
+	}
+
+	private void createDefaultXMLFile(String settingsFilename) {
+		try {
+			FileOutputStream fos = new FileOutputStream(settingsFilename);
+			OutputStreamWriter out = new OutputStreamWriter(fos, "UTF-8");
+
+			out.write(	"<snitcher>\n" + 
+						"  <host>http://winhudson.stonethree.com:8080</host>\n" +
+					    "  <com>COM14</com>\n" +
+					    "  <projects>\n" +
+					    "    <project>\n" +
+					    "      <display>Lynxx</display>\n" +
+					    "      <jenkins>Lynxx</jenkins>\n" +
+					    "    </project>\n" +
+					    "    <project>\n" +
+					    "      <display>Froth Sensor</display>\n" +
+					    "      <jenkins>FrothSensor</jenkins>\n" +
+					    "    </project>\n" +
+					    "  </projects>\n" +
+					    "</snitcher>\n");
+			out.close();
+			fos.close();
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+
 	public Snitcher() {
+
+		readSettingsFromXML();
+
 		view = new SnitcherView(this);
 		view.createAndShowGUI();
 
 		initializeVoice();
 
-		timer = new Timer(2000, this);
 		timer.start();
 
-		arduino.initialize("COM14");
-
-		monitor.addProject(new JenkinsProject("Alpaca", "Alpaca"));
-		monitor.addProject(new JenkinsProject("BeltAnalysis", "BeltAnalysis"));
-		monitor.addProject(new JenkinsProject("Lynxx", "Lynxx"));
-		monitor.addProject(new JenkinsProject("FrothSensor", "FrothSensor"));
 	}
 
 	public static void listAllVoices() {
@@ -101,6 +181,8 @@ public class Snitcher implements ActionListener {
 		voice.deallocate();
 
 		timer.stop();
+
+		arduino.close();
 	}
 
 	String secondsToTimeString(int milliseconds) {
@@ -127,13 +209,14 @@ public class Snitcher implements ActionListener {
 		for (JenkinsProject project : monitor.projects) {
 
 			try {
-				System.out.println(project.getStatus());
-				if (project.getStatus().equals("SUCCESS")) {
+				// System.out.println(project.getStatus());
+				if (project.isBuilding()) {
+					arduino.setChannelToState(offset, ProjectState.BUILDING);
+				} else if (project.getStatus().equals("SUCCESS")) {
 					arduino.setChannelToState(offset,
 							ProjectState.BUILD_SUCCEEDED);
 				} else {
-					arduino.setChannelToState(offset,
-							ProjectState.BUILD_FAILED);
+					arduino.setChannelToState(offset, ProjectState.BUILD_FAILED);
 
 				}
 			} catch (Exception e) {

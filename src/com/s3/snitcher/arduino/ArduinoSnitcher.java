@@ -1,5 +1,7 @@
 package com.s3.snitcher.arduino;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -11,10 +13,14 @@ import gnu.io.SerialPortEvent;
 import gnu.io.SerialPortEventListener; 
 
 import java.security.KeyStore.Builder;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
+
+import javax.swing.Timer;
 
 
-public class ArduinoSnitcher implements SerialPortEventListener {
+public class ArduinoSnitcher implements SerialPortEventListener, ActionListener {
 	
 	
 	SerialPort serialPort;
@@ -26,8 +32,22 @@ public class ArduinoSnitcher implements SerialPortEventListener {
 	private static final int TIME_OUT = 2000;
 	/** Default bits per second for COM port. */
 	private static final int DATA_RATE = 9600;
+	
+	private Timer timer = new Timer(200, this);
+	
+	private List<ProjectState> states = new ArrayList<ProjectState>();
+	
+	private boolean flickerOn = true;
 
 	public void initialize(String portName) {
+		
+		// Initialize states
+		states.add(ProjectState.BUILD_INTERRUPTED);
+		states.add(ProjectState.BUILD_INTERRUPTED);
+		states.add(ProjectState.BUILD_INTERRUPTED);
+		states.add(ProjectState.BUILD_INTERRUPTED);
+		states.add(ProjectState.BUILD_INTERRUPTED);
+		
 		CommPortIdentifier portId = null;
 		Enumeration portEnum = CommPortIdentifier.getPortIdentifiers();
 
@@ -66,6 +86,8 @@ public class ArduinoSnitcher implements SerialPortEventListener {
 		} catch (Exception e) {
 			System.err.println(e.toString());
 		}
+		
+		timer.start();
 	}
 
 	/**
@@ -77,6 +99,8 @@ public class ArduinoSnitcher implements SerialPortEventListener {
 			serialPort.removeEventListener();
 			serialPort.close();
 		}
+		
+		timer.stop();
 	}
 
 	/**
@@ -90,7 +114,7 @@ public class ArduinoSnitcher implements SerialPortEventListener {
 				input.read(chunk, 0, available);
 
 				// Displayed results are codepage dependent
-				System.out.print(new String(chunk));
+				//System.out.print(new String(chunk));
 			} catch (Exception e) {
 				System.err.println(e.toString());
 			}
@@ -140,20 +164,38 @@ public class ArduinoSnitcher implements SerialPortEventListener {
 			throw new Exception("Only channels 0 -> 5 exist");
 		}
 		
-		switch (projectState)
-		{
-		case BUILD_FAILED:
-			sendCommand(Command.BUILD_FAILED, channel);
-			break;
-		case BUILD_SUCCEEDED:
-			sendCommand(Command.BUILD_SUCCEEDED, channel);
-			break;
-		case BUILD_INTERRUPTED:
-			sendCommand(Command.BUILD_INTERRUPTED, channel);
-			break;
-		case BUILDING:
-			sendCommand(Command.BUILDING, channel);
-			break;
+		states.set(channel, projectState);
+		
+		
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent arg0) {
+		for (int channel = 0; channel < states.size(); channel++) {
+			ProjectState state = states.get(channel);
+			switch (state)
+			{
+			case BUILD_FAILED:
+				sendCommand(Command.BUILD_FAILED, channel);
+				break;
+			case BUILD_SUCCEEDED:
+				sendCommand(Command.BUILD_SUCCEEDED, channel);
+				break;
+			case BUILD_INTERRUPTED:
+				sendCommand(Command.BUILD_INTERRUPTED, channel);
+				break;
+			case BUILDING:
+				if (flickerOn) {
+					sendCommand(Command.BUILD_SUCCEEDED, channel);
+					flickerOn = false;
+				}
+				else {
+					sendCommand(Command.BUILD_INTERRUPTED, channel);
+					flickerOn = true;
+				}
+				break;
+			}
 		}
+		
 	}
 }

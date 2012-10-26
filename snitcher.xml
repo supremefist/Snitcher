@@ -1,0 +1,14 @@
+<snitcher>
+  <host>http://winhudson.stonethree.com:8080</host>
+  <com>COM14</com>
+  <projects>
+    <project>
+      <display>Lynxx</display>
+      <jenkins>Lynxx</jenkins>
+    </project>
+    <project>
+      <display>Froth Sensor</display>
+      <jenkins>FrothSensor</jenkins>
+    </project>
+  </projects>
+</snitcher>
