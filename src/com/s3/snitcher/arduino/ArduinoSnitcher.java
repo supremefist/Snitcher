@@ -1,4 +1,4 @@
-package arduino;
+package com.s3.snitcher.arduino;
 
 import java.io.IOException;
 import java.io.InputStream;

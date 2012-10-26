@@ -16,8 +16,10 @@ public class JenkinsProject {
 	
 	private boolean building = false;
 	private int buildNumber = -1;
-	private String buildResult = "";
+	private String buildResult = "SUCCESS";
 	private String lastUser = "";
+	private boolean notified = true; 
+	private int currentBuildNumber = -1;
 
 	public JenkinsProject(String newProjectName, String newJenkinsName) {
 		projectName = newProjectName;
@@ -35,6 +37,14 @@ public class JenkinsProject {
 	public String getStatus() {
 		return buildResult;
 	}
+	
+	public boolean mustNotify() {
+		return !notified;
+	}
+	
+	public void setNotified(boolean newNotified) {
+		notified = newNotified;
+	}
 
 	public void updateStatus() {
 		// every Hudson model object exposes the .../api/xml, but in this
@@ -45,8 +55,6 @@ public class JenkinsProject {
 		try {
 			url = new URL(host + "/job/" + jenkinsName + "/api/xml");
 
-			System.out.println(url);
-
 			// Firstly find latest build
 			Document dom;
 			dom = new SAXReader().read(url);
@@ -55,20 +63,42 @@ public class JenkinsProject {
 					"lastBuild");
 			String lastBuildURLString = lastBuild.elementText("url") + "api/xml";
 			lastBuildURL = new URL(lastBuildURLString);
-			System.out.println(lastBuildURLString);
 
 			// Get details about latest build
 			Document buildDom = new SAXReader().read(lastBuildURL);
 			Element buildRoot = (Element) buildDom.getRootElement();
 			
 			building = Boolean.parseBoolean(buildRoot.elementText("building"));
-			buildNumber = Integer.parseInt(buildRoot.elementText("number"));
-			buildResult = buildRoot.elementText("result");
+			int newBuildNumber = Integer.parseInt(buildRoot.elementText("number"));
+			String newBuildResult = buildRoot.elementText("result");
+			
+			if (building) {
+				currentBuildNumber = newBuildNumber;
+			}
+			
+			else if ((!building) && (currentBuildNumber > buildNumber)) {
+				if (!newBuildResult.equals("SUCCESS")) {
+					notified = false;
+				}
+				else if ((buildResult.equals("FAILURE")) && (newBuildResult.equals("SUCCESS"))) {
+					notified = false; 
+				}
+				
+				if (!notified) {
+					buildNumber = newBuildNumber;
+					buildResult = newBuildResult;
+				}
+			}
 			
 			// Get details about last commit
 			Element srcRoot = buildDom.getRootElement().element("changeSet");
 			Element item = srcRoot.element("item");
-			lastUser = item.elementText("user");
+			if (item != null) {
+				lastUser = item.elementText("user");
+			}
+			else {
+				lastUser = "anonymous";
+			}
 			
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
@@ -81,5 +111,9 @@ public class JenkinsProject {
 		}
 		
 
+	}
+
+	public String getNotifyString() {
+		return projectName + " build " + buildNumber + " " + buildResult + " thanks to " + lastUser + "!"; 
 	}
 }

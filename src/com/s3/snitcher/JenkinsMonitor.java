@@ -8,7 +8,10 @@ public class JenkinsMonitor {
 	public List<JenkinsProject> projects = new ArrayList<JenkinsProject>();
 
 	public JenkinsMonitor() {
-		projects.add(new JenkinsProject("BeltAnalysis", "BeltAnalysis"));
+	}
+	
+	public void addProject(JenkinsProject project) {
+		projects.add(project);
 	}
 
 	public void updateStatus() {

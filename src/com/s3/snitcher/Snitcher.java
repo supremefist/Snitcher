@@ -6,6 +6,8 @@ import java.util.Random;
 
 import javax.swing.Timer;
 
+import com.s3.snitcher.arduino.ArduinoSnitcher;
+import com.s3.snitcher.arduino.ProjectState;
 import com.sun.speech.freetts.Voice;
 import com.sun.speech.freetts.VoiceManager;
 
@@ -19,6 +21,7 @@ public class Snitcher implements ActionListener {
 	private boolean running = true;
 	private JenkinsMonitor monitor = new JenkinsMonitor();
 	private Timer timer = null;
+	private ArduinoSnitcher arduino = new ArduinoSnitcher();
 
 	/**
 	 * @param args
@@ -29,9 +32,16 @@ public class Snitcher implements ActionListener {
 		view.createAndShowGUI();
 
 		initializeVoice();
-		
+
 		timer = new Timer(2000, this);
 		timer.start();
+
+		arduino.initialize("COM14");
+
+		monitor.addProject(new JenkinsProject("Alpaca", "Alpaca"));
+		monitor.addProject(new JenkinsProject("BeltAnalysis", "BeltAnalysis"));
+		monitor.addProject(new JenkinsProject("Lynxx", "Lynxx"));
+		monitor.addProject(new JenkinsProject("FrothSensor", "FrothSensor"));
 	}
 
 	public static void listAllVoices() {
@@ -65,23 +75,16 @@ public class Snitcher implements ActionListener {
 	}
 
 	/*
-	public void start() {
-
-		say("Started");
-
-		while (running) {
-			System.out.println("Check");
-			
-			
-			try {
-				Thread.sleep(2000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}
-	*/
+	 * public void start() {
+	 * 
+	 * say("Started");
+	 * 
+	 * while (running) { System.out.println("Check");
+	 * 
+	 * 
+	 * try { Thread.sleep(2000); } catch (InterruptedException e) { // TODO
+	 * Auto-generated catch block e.printStackTrace(); } } }
+	 */
 
 	public void say(String text) {
 		System.out.println("Stitcher: " + text);
@@ -96,7 +99,7 @@ public class Snitcher implements ActionListener {
 		running = false;
 
 		voice.deallocate();
-		
+
 		timer.stop();
 	}
 
@@ -113,14 +116,40 @@ public class Snitcher implements ActionListener {
 		// Schedule a job for event dispatch thread:
 		// creating and showing this application's GUI.
 		final Snitcher snitcher = new Snitcher();
-		//snitcher.start();
+		// snitcher.start();
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent arg0) {
 		monitor.updateStatus();
-		for (JenkinsProject project: monitor.projects) {
-			System.out.println(project.getName() + " -> " + project.getStatus());
+
+		int offset = 0;
+		for (JenkinsProject project : monitor.projects) {
+
+			try {
+				System.out.println(project.getStatus());
+				if (project.getStatus().equals("SUCCESS")) {
+					arduino.setChannelToState(offset,
+							ProjectState.BUILD_SUCCEEDED);
+				} else {
+					arduino.setChannelToState(offset,
+							ProjectState.BUILD_FAILED);
+
+				}
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			if (project.mustNotify()) {
+				String notifyString = project.getNotifyString();
+				view.showText(notifyString);
+				say(project.getNotifyString());
+
+				project.setNotified(true);
+			}
+
+			offset += 1;
 		}
 	}
 

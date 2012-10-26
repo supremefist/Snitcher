@@ -1,10 +1,10 @@
-package arduino;
+package com.s3.snitcher.arduino;
 
 public class Test {
 
 	public static void main(String[] args) throws Exception {
 		ArduinoSnitcher main = new ArduinoSnitcher();
-		main.initialize("COM10");
+		main.initialize("COM14");
 		System.out.println("Started");
 		
 		while (true)

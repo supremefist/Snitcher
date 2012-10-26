@@ -1,4 +1,4 @@
-package arduino;
+package com.s3.snitcher.arduino;
 
 public enum ProjectState
 {
