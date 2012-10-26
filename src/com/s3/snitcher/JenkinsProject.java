@@ -18,7 +18,7 @@ public class JenkinsProject {
 	private String buildResult = "SUCCESS";
 	private String lastUser = "";
 	private boolean notified = true; 
-	private int currentBuildNumber = -1;
+	private int currentBuildNumber = 999999999;
 
 	public JenkinsProject(String newHost, String newProjectName, String newJenkinsName) {
 		projectName = newProjectName;
@@ -45,6 +45,8 @@ public class JenkinsProject {
 	public void setNotified(boolean newNotified) {
 		notified = newNotified;
 	}
+	
+	
 
 	public void updateStatus() {
 		// every Hudson model object exposes the .../api/xml, but in this
@@ -72,11 +74,9 @@ public class JenkinsProject {
 			int newBuildNumber = Integer.parseInt(buildRoot.elementText("number"));
 			String newBuildResult = buildRoot.elementText("result");
 			
-			if (building) {
-				currentBuildNumber = newBuildNumber;
-			}
+			currentBuildNumber = newBuildNumber;
 			
-			else if ((!building) && (currentBuildNumber > buildNumber)) {
+			if ((!building) && (currentBuildNumber > buildNumber)) {
 				if (!newBuildResult.equals("SUCCESS")) {
 					notified = false;
 				}

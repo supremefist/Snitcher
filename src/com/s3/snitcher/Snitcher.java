@@ -30,10 +30,13 @@ public class Snitcher implements ActionListener {
 	SnitcherView view = null;
 	private boolean running = true;
 	private JenkinsMonitor monitor = new JenkinsMonitor();
-	private Timer timer = new Timer(2000, this);
+	private int iterationDelay = 1000;
+	private Timer timer = new Timer(iterationDelay, this);
 	private ArduinoSnitcher arduino = new ArduinoSnitcher();
 	private String host = null;
 	private String comPort = null;
+	private int iterationsBetweenQuery = 2;
+	private int currentIterations = 0;
 
 	/**
 	 * @param args
@@ -80,6 +83,7 @@ public class Snitcher implements ActionListener {
 		}
 
 		arduino.initialize(comPort);
+		
 	}
 
 	private void createDefaultXMLFile(String settingsFilename) {
@@ -122,6 +126,7 @@ public class Snitcher implements ActionListener {
 
 		timer.start();
 
+		monitor.updateStatus();
 	}
 
 	public static void listAllVoices() {
@@ -203,13 +208,19 @@ public class Snitcher implements ActionListener {
 
 	@Override
 	public void actionPerformed(ActionEvent arg0) {
-		monitor.updateStatus();
+		
+		if (currentIterations > iterationsBetweenQuery) {
+			
+			monitor.updateStatus();
+			
+			currentIterations = 0;
+		}
+		
 
 		int offset = 0;
 		for (JenkinsProject project : monitor.projects) {
 
 			try {
-				// System.out.println(project.getStatus());
 				if (project.isBuilding()) {
 					arduino.setChannelToState(offset, ProjectState.BUILDING);
 				} else if (project.getStatus().equals("SUCCESS")) {
@@ -217,7 +228,6 @@ public class Snitcher implements ActionListener {
 							ProjectState.BUILD_SUCCEEDED);
 				} else {
 					arduino.setChannelToState(offset, ProjectState.BUILD_FAILED);
-
 				}
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
@@ -234,6 +244,11 @@ public class Snitcher implements ActionListener {
 
 			offset += 1;
 		}
+		
+		arduino.sendStatus();
+		
+		currentIterations += 1;
+
 	}
 
 }
