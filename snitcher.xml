@@ -1,14 +1,42 @@
 <snitcher>
-  <host>http://winhudson.stonethree.com:8080</host>
-  <com>COM14</com>
-  <projects>
-    <project>
-      <display>Lynxx</display>
-      <jenkins>Lynxx</jenkins>
-    </project>
-    <project>
-      <display>Froth Sensor</display>
-      <jenkins>FrothSensor</jenkins>
-    </project>
-  </projects>
+    <host>http://winhudson.stonethree.com:8080</host>
+    <com>COM16</com>
+    <projects>
+        <project>
+            <display>Alpaca</display>
+            <jenkins>Alpaca</jenkins>
+        </project>
+        <project>
+            <display>Alpaca Daily</display>
+            <jenkins>AlpacaDailyBuild</jenkins>
+        </project>
+        <project>
+            <display>Belt Analysis</display>
+            <jenkins>BeltAnalysis</jenkins>
+        </project>
+        <project>
+            <display>Belt Analysis Daily</display>
+            <jenkins>BeltAnalysisDailyBuild</jenkins>
+        </project>
+        <project>
+            <display>Lynxx</display>
+            <jenkins>Lynxx</jenkins>
+        </project>
+        <project>
+            <display>Lynxx Daily</display>
+            <jenkins>LynxxDailyBuild</jenkins>
+        </project>
+        <project>
+            <display>PGReplicate</display>
+            <jenkins>PGReplicate</jenkins>
+        </project>
+        <project>
+            <display>PGReplicate Daily</display>
+            <jenkins>PGReplicateDailyBuild</jenkins>
+        </project>
+        <project>
+            <display>Froth Sensor</display>
+            <jenkins>FrothSensor</jenkins>
+        </project>
+    </projects>
 </snitcher>
